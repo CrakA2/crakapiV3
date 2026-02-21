@@ -10,7 +10,7 @@
         mmr: { rank: string; rr: number; rr_change: number } | null;
         wl: { wins: number; losses: number; draws: number; streak: string[] } | null;
         stat: { kda: string; hs: string; acs: string } | null;
-        radiant: { rrNeeded: number | null; isRadiant: boolean; isImmortal: boolean } | null;
+        radiant: { rrNeeded: number | null; isRadiant: boolean; isImmortal: boolean; leaderboardRank: number | null; text: string } | null;
         comp: boolean;
       };
       error?: string;
@@ -199,9 +199,9 @@
     {#if data.data.radiant}
       <div class="wid-row radiant">
         {#if data.data.radiant.isRadiant}
-          <span class="wid-radiant">RADIANT</span>
-        {:else if data.data.radiant.isImmortal && data.data.radiant.rrNeeded !== null}
-          <span class="wid-radiant">{data.data.radiant.rrNeeded} RR to Radiant</span>
+          <span class="wid-radiant">{data.data.radiant.text}</span>
+        {:else if data.data.radiant.isImmortal}
+          <span class="wid-radiant">{data.data.radiant.text}</span>
         {:else}
           <span class="wid-dim">Not Immortal</span>
         {/if}

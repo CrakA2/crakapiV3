@@ -50,10 +50,10 @@
             suffix: ")",
         },
         {
-            id: "streamlabs",
+            id: "cloudbot",
             name: "Streamlabs",
-            prefix: "$readapi(",
-            suffix: ")",
+            prefix: "{readapi.",
+            suffix: "}",
         },
     ];
 
@@ -96,7 +96,7 @@
     function copyBotCommand(endpoint: string) {
         const url = `${window.location.origin}/v3/${endpoint}`;
         const bot = bots.find((b) => b.id === selectedBot);
-        const command = bot ? `${bot.prefix}${url}${bot.suffix}` : url;
+        const command = bot?.prefix ? `${bot.prefix}${url}${bot.suffix}` : url;
         navigator.clipboard.writeText(command);
         copiedEndpoint = `${selectedBot}-${endpoint}`;
         setTimeout(() => (copiedEndpoint = null), 2000);
@@ -239,7 +239,10 @@
         isRadiant: boolean;
         isImmortal: boolean;
     } {
-        if (text === "Player is Radiant") {
+        if (text.startsWith('Leaderboard #') && !text.includes('RR to Radiant')) {
+            return { rrNeeded: 0, isRadiant: true, isImmortal: true };
+        }
+        if (text === "Player is Radiant" || text.startsWith('Leaderboard #')) {
             return { rrNeeded: 0, isRadiant: true, isImmortal: true };
         }
         if (text === "Player is not Immortal") {
@@ -440,15 +443,6 @@
                         {/if}
                     </div>
 
-                    {#if playerData.leaderboard_rank}
-                        <div class="meta-row">
-                            <span class="meta-label">Leaderboard</span>
-                            <span class="meta-value highlight"
-                                >#{playerData.leaderboard_rank.toLocaleString()}</span
-                            >
-                        </div>
-                    {/if}
-
                     {#if playerData.radiant_rr}
                         <div class="meta-row radiant">
                             <span class="meta-label">Radiant</span>
@@ -589,24 +583,8 @@
                                     {/if}
 
                                     {#if (widgetToggles.radiant && playerData && getDisplayData().radiant_rr) || (!playerData && getDisplayData().radiant_rr)}
-                                        {@const radiantInfo = parseRadiantRR(
-                                            getDisplayData().radiant_rr,
-                                        )}
                                         <div class="wid-row radiant">
-                                            {#if radiantInfo.isRadiant}
-                                                <span class="wid-radiant"
-                                                    >RADIANT</span
-                                                >
-                                            {:else if radiantInfo.isImmortal && radiantInfo.rrNeeded !== null}
-                                                <span class="wid-radiant"
-                                                    >{radiantInfo.rrNeeded} RR to
-                                                    Radiant</span
-                                                >
-                                            {:else}
-                                                <span class="wid-dim"
-                                                    >Not Immortal</span
-                                                >
-                                            {/if}
+                                            <span class="wid-radiant">{getDisplayData().radiant_rr}</span>
                                         </div>
                                     {/if}
                                 </div>
@@ -1090,36 +1068,6 @@
         color: #fff;
     }
 
-    .comp-toggle {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        cursor: pointer;
-    }
-
-    .comp-toggle input {
-        accent-color: var(--accent);
-        width: 14px;
-        height: 14px;
-    }
-
-    .comp-label {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 0.6875rem;
-        color: var(--text-dim);
-        background: var(--bg-soft);
-        padding: 0.375rem 0.5rem;
-        border-radius: 4px;
-        border: 1px solid var(--border);
-        transition: all 0.15s ease;
-    }
-
-    .comp-label.active {
-        color: #fbbf24;
-        border-color: rgba(251, 191, 36, 0.3);
-        background: rgba(251, 191, 36, 0.1);
-    }
-
     .results-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1315,10 +1263,6 @@
         color: var(--text-dim);
     }
 
-    .meta-value.highlight {
-        color: var(--accent);
-    }
-
     .widget-section {
         margin-top: 1rem;
         border-top: 1px solid var(--border);
@@ -1497,11 +1441,6 @@
         font-weight: 600;
         color: #fbbf24;
         letter-spacing: 0.05em;
-    }
-
-    .wid-dim {
-        font-size: 0.625rem;
-        color: var(--text-muted);
     }
 
     .copy-widget-btn {
@@ -1783,19 +1722,6 @@
 
     .doc-widget-preview .wid-sep {
         color: var(--text-muted);
-    }
-
-    .footer {
-        text-align: center;
-        padding: 2rem 0 1rem;
-        margin-top: 2rem;
-    }
-
-    .footer p {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 0.6875rem;
-        color: var(--text-muted);
-        line-height: 1.5;
     }
 
     @media (max-width: 540px) {

@@ -17,7 +17,7 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
     mmr: { rank: string; rr: number; rr_change: number } | null;
     wl: { wins: number; losses: number; draws: number; streak: string[] } | null;
     stat: { kda: string; hs: string; acs: string } | null;
-    radiant: { rrNeeded: number | null; isRadiant: boolean; isImmortal: boolean } | null;
+    radiant: { rrNeeded: number | null; isRadiant: boolean; isImmortal: boolean; leaderboardRank: number | null; text: string } | null;
     comp: boolean;
   } = {
     mmr: null,
@@ -52,9 +52,9 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
             const isRadiant = false;
 
             if (!isImmortal) {
-              result.radiant = { rrNeeded: null, isRadiant: false, isImmortal: false };
+              result.radiant = { rrNeeded: null, isRadiant: false, isImmortal: false, leaderboardRank: null, text: 'Not Immortal' };
             } else {
-              result.radiant = { rrNeeded: mmrFromImmortal, isRadiant, isImmortal: true };
+              result.radiant = { rrNeeded: mmrFromImmortal, isRadiant, isImmortal: true, leaderboardRank: null, text: `Leaderboard ? - ${mmrFromImmortal} RR to Radiant` };
             }
           }
         })
@@ -98,7 +98,7 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
 
     await Promise.all(promises);
 
-    if (showRadiant && result.radiant?.isImmortal && result.radiant.rrNeeded !== null) {
+    if (showRadiant && result.radiant?.isImmortal) {
       try {
         const leaderboard = await cache.coalesce(
           cache.buildKey('leaderboard', region),
@@ -107,11 +107,24 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
         );
         cache.set('leaderboard', cache.buildKey('leaderboard', region), leaderboard);
 
-        if (leaderboard.players?.length >= 500) {
+        const player = leaderboard.players?.find(p => p.puuid === puuid);
+        if (player) {
+          result.radiant.leaderboardRank = player.leaderboard_rank;
+        }
+
+        if (leaderboard.players?.length >= 500 && result.radiant.rrNeeded !== null) {
           const threshold = leaderboard.players[499].rr;
           const needed = threshold - result.radiant.rrNeeded;
           result.radiant.rrNeeded = needed;
           result.radiant.isRadiant = needed <= 0;
+        }
+
+        if (result.radiant.isRadiant) {
+          result.radiant.text = result.radiant.leaderboardRank ? `Leaderboard #${result.radiant.leaderboardRank}` : 'Radiant';
+        } else {
+          result.radiant.text = result.radiant.leaderboardRank 
+            ? `Leaderboard #${result.radiant.leaderboardRank} - ${result.radiant.rrNeeded} RR to Radiant`
+            : `${result.radiant.rrNeeded} RR to Radiant`;
         }
       } catch {
         // Leaderboard fetch failed, keep raw RR value

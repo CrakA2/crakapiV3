@@ -63,58 +63,62 @@ export interface MMRData {
   }>;
 }
 
-// Raw Henrik API v3 Match structure
+// Raw Henrik API v4 Match structure
 export interface HenrikMatch {
   metadata: HenrikMatchMetadata;
-  players: HenrikMatchPlayers;
-  teams: HenrikMatchTeams;
+  players: HenrikPlayer[];
+  teams: HenrikTeam[];
 }
 
 export interface HenrikMatchMetadata {
-  map: string;
-  game_version: string;
-  game_length: number;
-  game_start: number;
-  game_start_patched: string;
-  rounds_played: number;
-  mode: string;
-  mode_id?: string;
-  queue?: string;
-  season_id?: string;
-  platform: string;
-  matchid: string;
-  premier_info?: {
-    tournament_id: string | null;
-    matchup_id: string | null;
+  match_id: string;
+  map: {
+    id: string;
+    name: string;
   };
-}
-
-export interface HenrikMatchPlayers {
-  all_players?: HenrikPlayer[];
-  red?: HenrikPlayer[];
-  blue?: HenrikPlayer[];
+  game_version: string;
+  game_length_in_ms: number;
+  started_at: string;
+  is_completed: boolean;
+  queue: {
+    id: string;
+    name: string;
+  };
+  season?: {
+    id: string;
+    short: string;
+  };
+  platform: string;
+  region?: string;
 }
 
 export interface HenrikPlayer {
   puuid: string;
   name: string;
   tag: string;
-  team: 'Red' | 'Blue';
-  character?: string;
+  team_id: 'Red' | 'Blue';
+  agent?: {
+    id: string;
+    name: string;
+  };
   stats: {
+    score: number;
     kills: number;
     deaths: number;
     assists: number;
-    score: number;
-    bodyshots: number;
     headshots: number;
+    bodyshots: number;
     legshots: number;
   };
 }
 
-export interface HenrikMatchTeams {
-  red: number | null;
-  blue: number | null;
+export interface HenrikTeam {
+  team_id: 'Red' | 'Blue';
+  rounds: {
+    won: number;
+    lost: number;
+  };
+  won: boolean;
 }
 
 // Simplified internal match structure for session calculations
@@ -131,6 +135,7 @@ export interface MatchMetadata {
   game_start: number;
   game_start_patched: string;
   queue?: string;
+  rounds_played?: number;
 }
 
 export interface MatchStats {

@@ -54,7 +54,11 @@ export const GET: RequestHandler = async ({ params, url }) => {
         if (leaderboard.players?.length >= 500) {
           const threshold = leaderboard.players[499].rr;
           const needed = threshold - mmrFromImmortal;
-          radiantRR = needed <= 0 ? 'Player is Radiant' : `${needed}RR to Radiant`;
+          if (needed <= 0) {
+            radiantRR = leaderboardRank ? `Leaderboard #${leaderboardRank}` : 'Player is Radiant';
+          } else {
+            radiantRR = leaderboardRank ? `Leaderboard #${leaderboardRank} - ${needed}RR to Radiant` : `${needed}RR to Radiant`;
+          }
         }
       } catch {
         radiantRR = 'Unable to calculate';

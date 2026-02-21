@@ -5,6 +5,8 @@ import type {
   MMRData, 
   Match, 
   HenrikMatch,
+  HenrikPlayer,
+  HenrikTeam,
   LeaderboardData,
   HenrikResponse 
 } from '$lib/types';
@@ -60,33 +62,42 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
 }
 
 /**
- * Transform Henrik API match to internal Match format
+ * Transform Henrik API v4 match to internal Match format
  * Extracts player stats for the target puuid
  */
 function transformMatch(match: HenrikMatch, puuid: string): Match | null {
-  // v4 API may have players in all_players, or split between red/blue
-  const allPlayers = match.players?.all_players || [
-    ...(match.players?.red || []),
-    ...(match.players?.blue || [])
-  ];
+  // v4 API has players as a flat array
+  const players = match.players;
   
-  const player = allPlayers.find((p: { puuid: string }) => p.puuid === puuid);
+  const player = players.find((p: HenrikPlayer) => p.puuid === puuid);
   
   if (!player) {
     return null;
   }
 
+  // Parse ISO timestamp to Unix timestamp (seconds)
+  const startedAt = new Date(match.metadata.started_at).getTime() / 1000;
+  
+  // Find team scores from teams array
+  const redTeam = match.teams?.find((t: HenrikTeam) => t.team_id === 'Red');
+  const blueTeam = match.teams?.find((t: HenrikTeam) => t.team_id === 'Blue');
+  
+  // Calculate rounds played (won + lost for either team)
+  const roundsPlayed = redTeam ? redTeam.rounds.won + redTeam.rounds.lost : 
+                        blueTeam ? blueTeam.rounds.won + blueTeam.rounds.lost : undefined;
+
   return {
     metadata: {
-      match_id: match.metadata.matchid,
-      mode: match.metadata.mode,
-      map: match.metadata.map,
-      game_start: match.metadata.game_start,
-      game_start_patched: match.metadata.game_start_patched,
-      queue: match.metadata.queue,
+      match_id: match.metadata.match_id,
+      mode: match.metadata.queue?.id || 'unknown',
+      map: match.metadata.map?.name || 'Unknown',
+      game_start: startedAt,
+      game_start_patched: match.metadata.started_at,
+      queue: match.metadata.queue?.id,
+      rounds_played: roundsPlayed,
     },
     stats: {
-      team: player.team,
+      team: player.team_id,
       kills: player.stats.kills,
       deaths: player.stats.deaths,
       assists: player.stats.assists,
@@ -97,7 +108,10 @@ function transformMatch(match: HenrikMatch, puuid: string): Match | null {
         leg: player.stats.legshots,
       },
     },
-    teams: match.teams,
+    teams: {
+      red: redTeam?.rounds?.won ?? null,
+      blue: blueTeam?.rounds?.won ?? null,
+    },
   };
 }
 
@@ -112,7 +126,7 @@ export async function getMMR(region: string, puuid: string, platform = 'pc'): Pr
 export async function getMatches(region: string, puuid: string, platform = 'pc'): Promise<Match[]> {
   const henrikMatches = await fetchApi<HenrikMatch[]>(`/v4/by-puuid/matches/${region}/${platform}/${puuid}`);
   
-  if (!Array.isArray(henrikMatches)) {
+  if (!Array.isArray(henrikMatches) || henrikMatches.length === 0) {
     return [];
   }
   

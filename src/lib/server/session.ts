@@ -132,10 +132,16 @@ export function calculateACS(matches: Match[], compOnly = false): { acs: number;
     return null;
   }
 
-  const stats = searchMatches[0].stats;
+  const match = searchMatches[0];
+  const stats = match.stats;
+  const roundsPlayed = match.metadata.rounds_played;
+  
+  // ACS = total combat score / rounds played
+  const acs = roundsPlayed ? Math.round(stats.score / roundsPlayed) : stats.score;
+  
   return {
-    acs: stats.score,
-    text: `${stats.score} ACS`,
+    acs,
+    text: `${acs}`,
   };
 }
 

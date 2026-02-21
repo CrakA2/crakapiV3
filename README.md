@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://api.crak.in/games-valorant.png" alt="CrakAPI" width="128" />
-</p>
-
 <h1 align="center">CrakAPI v3</h1>
 
 <p align="center">
@@ -109,13 +105,13 @@ $(urlfetch https://api.crak.in/v3/wl/na/PLAYER_PUUID)
 ### StreamElements
 
 ```
-${urlfetch https://api.crak.in/v3/wl/na/PLAYER_PUUID}
-```
-
-### StreamLabs
-
-```
 $(customapi https://api.crak.in/v3/wl/na/PLAYER_PUUID)
+```
+
+### Streamlabs Cloudbot
+
+```
+{readapi.https://api.crak.in/v3/wl/na/PLAYER_PUUID}
 ```
 
 ## OBS Widget
