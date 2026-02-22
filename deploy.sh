@@ -214,12 +214,34 @@ fi
 
 if [[ "\$has_pm2" == "true" ]]; then
     echo "[INFO] Starting with PM2..."
-    pm2 delete crakapi-v3 2>/dev/null || true
-    pm2 start ecosystem.config.cjs
+    
+    # Check if app already exists in PM2
+    if pm2 describe crakapi-v3 > /dev/null 2>&1; then
+        echo "[INFO] App exists - reloading..."
+        pm2 reload crakapi-v3
+    else
+        echo "[INFO] App not found - starting fresh..."
+        pm2 start ecosystem.config.cjs
+    fi
+    
     pm2 save
     
+    # Configure PM2 to start on boot
     if command -v systemctl &> /dev/null; then
-        pm2 startup systemd -u $server_user --hp /home/$server_user 2>/dev/null || true
+        # Check if PM2 systemd service exists (be specific to avoid matching systemd-tpm2)
+        if ! systemctl list-unit-files 2>/dev/null | grep -q "^pm2-"; then
+            echo "[INFO] Configuring PM2 startup service..."
+            if [[ "$server_user" == "root" ]]; then
+                pm2 startup systemd -u root --hp /root
+            else
+                pm2 startup systemd -u $server_user --hp /home/$server_user
+            fi
+            echo "[INFO] PM2 startup configured - verifying..."
+            systemctl list-unit-files | grep "^pm2-" || echo "[WARN] PM2 service not found after configuration"
+        else
+            echo "[INFO] PM2 startup already configured:"
+            systemctl list-unit-files | grep "^pm2-"
+        fi
     fi
     
     pm2 list

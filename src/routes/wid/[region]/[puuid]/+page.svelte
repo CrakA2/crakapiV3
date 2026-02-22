@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { invalidate } from '$app/navigation';
   import { page } from '$app/stores';
 
   interface Props {
@@ -135,18 +133,11 @@
     }
     return `/api/og?${params.toString()}`;
   }
-
-  onMount(() => {
-    const interval = setInterval(() => {
-      invalidate('wid:data');
-    }, 60000);
-
-    return () => clearInterval(interval);
-  });
 </script>
 
 <svelte:head>
   <title>{buildTitle()}</title>
+  <meta http-equiv="refresh" content="60" />
   <meta property="og:title" content={buildTitle()} />
   <meta property="og:description" content={buildDescription()} />
   <meta property="og:type" content="website" />

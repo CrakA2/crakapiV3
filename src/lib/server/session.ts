@@ -1,8 +1,7 @@
 import type { Match, WinLossResult } from '$lib/types';
 
 const EXCLUDED_MODES = ['Deathmatch', 'Custom', 'Team Deathmatch', 'deathmatch', 'custom'];
-const SESSION_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-const FIRST_MATCH_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+const SESSION_GAP_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 function isCompetitive(match: Match): boolean {
   const queue = match.metadata.queue?.toLowerCase();
@@ -14,83 +13,72 @@ export function filterCompetitive(matches: Match[]): Match[] {
   return matches.filter(isCompetitive);
 }
 
-export function calculateWinLoss(matches: Match[], modeFilters?: string[]): WinLossResult {
+function isExcludedMode(mode: string): boolean {
+  return EXCLUDED_MODES.includes(mode);
+}
+
+export function calculateWinLoss(matches: Match[], compOnly = false): WinLossResult {
   let wins = 0;
   let losses = 0;
   let draws = 0;
   const streak: string[] = [];
-  const modeSet = modeFilters ? new Set(modeFilters.map(m => m.toLowerCase())) : null;
 
-  const now = new Date();
+  // Filter matches: exclude deathmatch/custom, optionally filter to comp only
+  const relevantMatches = matches.filter(m => {
+    if (isExcludedMode(m.metadata.mode)) return false;
+    if (compOnly && !isCompetitive(m)) return false;
+    return true;
+  });
 
-  for (let i = 0; i < matches.length; i++) {
-    const match = matches[i];
-    
-    // game_start is Unix timestamp in seconds, convert to milliseconds
-    const startedAt = new Date(match.metadata.game_start * 1000);
-    
-    if (i === 0 && now.getTime() - startedAt.getTime() > FIRST_MATCH_THRESHOLD_MS) {
-      break;
-    }
+  // Walk through matches newest to oldest
+  // Stop when gap between matches exceeds 3 hours
+  for (let i = 0; i < relevantMatches.length; i++) {
+    const match = relevantMatches[i];
+    const gameStart = match.metadata.game_start * 1000;
 
-    if (modeSet && match.metadata.mode && !modeSet.has(match.metadata.mode.toLowerCase())) {
-      continue;
-    }
-
-    if (i < matches.length - 1) {
-      const prevStartedAt = new Date(matches[i + 1].metadata.game_start * 1000);
-      const timeDiff = startedAt.getTime() - prevStartedAt.getTime();
-      if (timeDiff > SESSION_TIMEOUT_MS) {
+    // Check gap to previous (older) match
+    if (i < relevantMatches.length - 1) {
+      const prevStart = relevantMatches[i + 1].metadata.game_start * 1000;
+      const gap = gameStart - prevStart;
+      if (gap > SESSION_GAP_MS) {
         break;
       }
-    }
-
-    if (EXCLUDED_MODES.includes(match.metadata.mode)) {
-      continue;
     }
 
     const playerTeam = match.stats.team;
     const redScore = match.teams.red;
     const blueScore = match.teams.blue;
 
-    if (redScore === null || blueScore === null) {
-      continue;
-    }
+    if (redScore === null || blueScore === null) continue;
 
-    let winningTeam: 'Red' | 'Blue' | 'Draw';
+    let result: 'W' | 'L' | 'D';
     if (redScore > blueScore) {
-      winningTeam = 'Red';
+      result = playerTeam === 'Red' ? 'W' : 'L';
     } else if (blueScore > redScore) {
-      winningTeam = 'Blue';
+      result = playerTeam === 'Blue' ? 'W' : 'L';
     } else {
-      winningTeam = 'Draw';
+      result = 'D';
     }
 
-    if (winningTeam === 'Draw') {
-      draws++;
-      streak.push('D');
-    } else if (winningTeam === playerTeam) {
-      wins++;
-      streak.push('W');
-    } else {
-      losses++;
-      streak.push('L');
-    }
+    if (result === 'W') wins++;
+    else if (result === 'L') losses++;
+    else draws++;
+
+    streak.push(result);
   }
 
-  const reversedStreak = streak.reverse();
+  // Streak is in reverse order (oldest to newest), flip it
+  const orderedStreak = streak.reverse();
 
   let text = `W${wins} L${losses}`;
-  if (draws > 0) {
-    text += ` D${draws}`;
-  }
-  text += ` (${reversedStreak.join('')})`;
+  if (draws > 0) text += ` D${draws}`;
+  text += ` (${orderedStreak.join('')})`;
 
   return {
     wins,
     losses,
     draws,
-    streak: reversedStreak,
+    streak: orderedStreak,
     text,
   };
 }

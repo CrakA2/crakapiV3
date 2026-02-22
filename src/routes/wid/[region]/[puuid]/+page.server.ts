@@ -4,6 +4,12 @@ import * as henrik from '$lib/server/henrik-client';
 import * as session from '$lib/server/session';
 
 export const load: ServerLoad = async ({ params, url, setHeaders }) => {
+  setHeaders({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+
   const { region, puuid } = params;
   const platform = url.searchParams.get('platform') || 'pc';
   const compOnly = url.searchParams.has('comp');
@@ -67,13 +73,11 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
           cache.buildKey('matches', region, puuid, platform),
           () => henrik.getMatches(region!, puuid!, platform),
           false
-        ).then(matches => {
+        )        .then(matches => {
           cache.set('matches', cache.buildKey('matches', region, puuid, platform), matches);
 
-          const filteredMatches = compOnly ? session.filterCompetitive(matches) : matches;
-
           if (showWL) {
-            const wl = session.calculateWinLoss(filteredMatches);
+            const wl = session.calculateWinLoss(matches, compOnly);
             result.wl = {
               wins: wl.wins,
               losses: wl.losses,

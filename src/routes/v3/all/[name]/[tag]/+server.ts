@@ -26,8 +26,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
       henrik.getMMR(region, puuid, platform),
     ]);
 
-    const filteredMatches = compOnly ? session.filterCompetitive(matches) : matches;
-    const winLoss = session.calculateWinLoss(filteredMatches);
+    const winLoss = session.calculateWinLoss(matches, compOnly);
     const kda = session.calculateKDA(matches, compOnly);
     const hsPercent = session.calculateHeadshotPercent(matches, compOnly);
     const acs = session.calculateACS(matches, compOnly);

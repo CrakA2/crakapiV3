@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { setServers, setDefaultResultOrder, resolve4 } from 'node:dns';
+import { setServers, setDefaultResultOrder } from 'node:dns';
 import type { 
   Account, 
   MMRData, 
@@ -28,13 +28,6 @@ function getApiKey(): string {
 async function fetchApi<T>(endpoint: string): Promise<T> {
   const apiKey = getApiKey();
   const url = `${BASE_URL}${endpoint}`;
-  
-  await new Promise<void>((resolve, reject) => {
-    resolve4(API_HOST, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
 
   const response = await fetch(url, {
     headers: {

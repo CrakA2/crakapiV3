@@ -10,35 +10,35 @@ type PendingRequest = Promise<CacheValue>;
 const caches = {
   mmr: new LRUCache<string, CacheValue>({
     max: 2000,
-    ttl: 60_000,
+    ttl: 30_000,
   }),
   account: new LRUCache<string, CacheValue>({
     max: 1000,
-    ttl: 300_000,
+    ttl: 30_000,
   }),
   wl: new LRUCache<string, CacheValue>({
     max: 500,
-    ttl: 120_000,
+    ttl: 30_000,
   }),
   matches: new LRUCache<string, CacheValue>({
     max: 200,
-    ttl: 600_000,
+    ttl: 30_000,
   }),
   leaderboard: new LRUCache<string, CacheValue>({
     max: 20,
-    ttl: 1800_000,
+    ttl: 30_000,
   }),
   hs: new LRUCache<string, CacheValue>({
     max: 500,
-    ttl: 120_000,
+    ttl: 30_000,
   }),
   radiant: new LRUCache<string, CacheValue>({
     max: 500,
-    ttl: 180_000,
+    ttl: 30_000,
   }),
   acs: new LRUCache<string, CacheValue>({
     max: 500,
-    ttl: 120_000,
+    ttl: 30_000,
   }),
 };
 
