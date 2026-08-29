@@ -145,7 +145,7 @@ https://api.crak.in/wid/{region}/{puuid}?mmr=y&wl=y&radiant=y&bg=0
 - **Framework** — SvelteKit
 - **Language** — TypeScript
 - **API** — [HenrikDev](https://docs.henrikdev.xyz)
-- **Hosting** — [api.crak.in](https://api.crak.in) (Node.js + PM2, cluster mode)
+- **Hosting** — [api.crak.in](https://api.crak.in) (Node.js + PM2, single instance)
 
 ## Testing
 
@@ -160,7 +160,7 @@ Covers server logic (`getRadiantThresholdRR`, win/loss/KDA/ACS calculators, form
 
 ## Deployment
 
-Deployed to `api.crak.in` via `deploy.sh` (SSH + rsync, PM2 `cluster` mode). Build with `npm run build`, then run `./deploy.sh`. The leaderboard cache is warmed in the background (10-minute TTL, refreshed every 9 minutes) on a single PM2 instance so Radiant calculations stay fast without N× duplicate upstream calls across cluster workers. Each worker self-caches the leaderboard on first miss.
+Deployed to `api.crak.in` via `deploy.sh` (SSH + rsync, PM2 `instances: 1`). Build with `npm run build`, then run `./deploy.sh`. A single instance means one shared in-server cache; the leaderboard is warmed in the background (10-minute TTL, refreshed every 9 minutes) so Radiant calculations stay fast without hitting the upstream API on every request.
 
 ## License
 
