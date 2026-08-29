@@ -46,9 +46,20 @@ export function warmLeaderboards(): void {
 
 let started = false;
 
+/**
+ * In PM2 cluster mode (`instances: max`) every worker is a separate process with
+ * its own cache, so we only run the background warmer on a single instance to
+ * avoid Nx duplicate upstream leaderboard fetches. Each worker still self-caches
+ * the leaderboard on first miss via getCachedLeaderboard.
+ */
+function shouldRunWarmer(): boolean {
+  const instanceId = process.env.NODE_APP_INSTANCE ?? process.env.pm_id;
+  return instanceId === undefined || instanceId === '0';
+}
+
 /** Starts a background interval that keeps leaderboards warm. Safe to call repeatedly. */
 export function startLeaderboardWarmer(intervalMs = WARM_INTERVAL_MS): void {
-  if (started || building) return;
+  if (started || building || !shouldRunWarmer()) return;
   started = true;
 
   warmLeaderboards();

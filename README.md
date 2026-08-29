@@ -160,7 +160,7 @@ Covers server logic (`getRadiantThresholdRR`, win/loss/KDA/ACS calculators, form
 
 ## Deployment
 
-Deployed to `api.crak.in` via `deploy.sh` (SSH + rsync, PM2 `cluster` mode). Build with `npm run build`, then run `./deploy.sh`. The leaderboard cache is warmed in the background (10-minute TTL, refreshed every 9 minutes) so Radiant calculations stay fast without hitting the upstream API on every request.
+Deployed to `api.crak.in` via `deploy.sh` (SSH + rsync, PM2 `cluster` mode). Build with `npm run build`, then run `./deploy.sh`. The leaderboard cache is warmed in the background (10-minute TTL, refreshed every 9 minutes) on a single PM2 instance so Radiant calculations stay fast without N× duplicate upstream calls across cluster workers. Each worker self-caches the leaderboard on first miss.
 
 ## License
 
