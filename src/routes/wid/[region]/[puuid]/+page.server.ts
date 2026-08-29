@@ -2,6 +2,7 @@ import type { ServerLoad } from '@sveltejs/kit';
 import * as cache from '$lib/server/cache';
 import * as henrik from '$lib/server/henrik-client';
 import * as session from '$lib/server/session';
+import { getCachedLeaderboard } from '$lib/server/leaderboard';
 
 export const load: ServerLoad = async ({ params, url, setHeaders }) => {
   setHeaders({
@@ -104,20 +105,15 @@ export const load: ServerLoad = async ({ params, url, setHeaders }) => {
 
     if (showRadiant && result.radiant?.isImmortal) {
       try {
-        const leaderboard = await cache.coalesce(
-          cache.buildKey('leaderboard', region),
-          () => henrik.getLeaderboard(region!),
-          false
-        );
-        cache.set('leaderboard', cache.buildKey('leaderboard', region), leaderboard);
+        const leaderboard = await getCachedLeaderboard(region!);
 
         const player = leaderboard.players?.find(p => p.puuid === puuid);
         if (player) {
           result.radiant.leaderboardRank = player.leaderboard_rank;
         }
 
-        if (leaderboard.players?.length >= 500 && result.radiant.rrNeeded !== null) {
-          const threshold = leaderboard.players[499].rr;
+        const threshold = session.getRadiantThresholdRR(leaderboard.players || []);
+        if (threshold !== null && result.radiant.rrNeeded !== null) {
           const needed = threshold - result.radiant.rrNeeded;
           result.radiant.rrNeeded = needed;
           result.radiant.isRadiant = needed <= 0;

@@ -1,5 +1,6 @@
-import type { Match, WinLossResult } from '$lib/types';
+import type { LeaderboardPlayer, Match, WinLossResult } from '$lib/types';
 
+const RADIANT_TIER = 27;
 const EXCLUDED_MODES = ['Deathmatch', 'Custom', 'Team Deathmatch', 'deathmatch', 'custom'];
 const SESSION_GAP_MS = 3 * 60 * 60 * 1000; // 3 hours
 
@@ -7,6 +8,37 @@ function isCompetitive(match: Match): boolean {
   const queue = match.metadata.queue?.toLowerCase();
   const mode = match.metadata.mode?.toLowerCase();
   return queue === 'competitive' || mode === 'competitive';
+}
+
+/**
+ * Returns the RR a player needs to reach Radiant.
+ *
+ * The leaderboard can contain fewer than 500 Radiant players (e.g. when rank 500
+ * is not Radiant), so we cannot blindly use the 500th player's RR. Instead we find
+ * the lowest-ranked Radiant player (the highest `leaderboard_rank` with tier 27)
+ * and use their RR as the threshold. Falls back to the 500th player's RR when no
+ * Radiant is present on the leaderboard.
+ */
+export function getRadiantThresholdRR(players: LeaderboardPlayer[]): number | null {
+  if (players.length === 0) return null;
+
+  let threshold: number | null = null;
+  for (const player of players) {
+    if (player.tier === RADIANT_TIER) {
+      // Players are sorted by leaderboard_rank ascending, so the last Radiant
+      // encountered has the highest rank (i.e. the lowest Radiant RR).
+      threshold = player.rr;
+    } else if (threshold !== null) {
+      // Radiant players are contiguous at the top of the leaderboard.
+      break;
+    }
+  }
+
+  if (threshold !== null) return threshold;
+
+  // No Radiant found; fall back to the 500th player if available.
+  if (players.length >= 500) return players[499].rr;
+  return null;
 }
 
 export function filterCompetitive(matches: Match[]): Match[] {
@@ -150,7 +182,7 @@ export function calculateMMRToRadiant(currentElo: number): {
 
   return {
     rrNeeded: mmrFromImmortal,
-    isRadiant: false,
+    isRadiant: mmrFromImmortal <= 0,
     isImmortal: true,
   };
 }

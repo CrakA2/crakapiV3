@@ -3,6 +3,7 @@ import { json } from '@sveltejs/kit';
 import * as cache from '$lib/server/cache';
 import * as henrik from '$lib/server/henrik-client';
 import * as session from '$lib/server/session';
+import { getCachedLeaderboard } from '$lib/server/leaderboard';
 import type { PlayerAllData } from '$lib/types';
 
 export const GET: RequestHandler = async ({ params, url }) => {
@@ -49,9 +50,9 @@ export const GET: RequestHandler = async ({ params, url }) => {
       radiantRR = 'Player is not Immortal';
     } else {
       try {
-        const leaderboard = await henrik.getLeaderboard(region);
-        if (leaderboard.players?.length >= 500) {
-          const threshold = leaderboard.players[499].rr;
+        const leaderboard = await getCachedLeaderboard(region);
+        const threshold = session.getRadiantThresholdRR(leaderboard.players || []);
+        if (threshold !== null) {
           const needed = threshold - mmrFromImmortal;
           if (needed <= 0) {
             radiantRR = leaderboardRank ? `Leaderboard #${leaderboardRank}` : 'Player is Radiant';

@@ -26,7 +26,7 @@ const caches = {
   }),
   leaderboard: new LRUCache<string, CacheValue>({
     max: 20,
-    ttl: 30_000,
+    ttl: 10 * 60_000,
   }),
   hs: new LRUCache<string, CacheValue>({
     max: 500,

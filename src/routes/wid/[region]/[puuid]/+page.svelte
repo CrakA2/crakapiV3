@@ -17,6 +17,8 @@
 
   let { data }: Props = $props();
 
+  const noBackground = $derived($page.url.searchParams.get('bg') === '0');
+
   function buildTitle(): string {
     if (data.error) return 'Valorant Stats';
     const parts: string[] = [];
@@ -151,7 +153,7 @@
   <meta name="twitter:image" content={buildOgImageUrl()} />
 </svelte:head>
 
-<div class="widget">
+<div class="widget" class:no-bg={noBackground}>
   {#if data.error}
     <div class="error">{data.error}</div>
   {:else}
@@ -214,6 +216,16 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .widget.no-bg {
+    background: transparent;
+    padding: 12px 16px;
+  }
+
+  .widget.no-bg .wid-row.radiant {
+    background: transparent;
+    border-left-color: rgba(251, 191, 36, 0.5);
   }
 
   .wid-row {

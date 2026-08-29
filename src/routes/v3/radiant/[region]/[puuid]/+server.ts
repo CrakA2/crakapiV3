@@ -2,6 +2,8 @@ import type { RequestHandler } from '@sveltejs/kit';
 import * as cache from '$lib/server/cache';
 import * as henrik from '$lib/server/henrik-client';
 import * as fmt from '$lib/server/formatters';
+import * as session from '$lib/server/session';
+import { getCachedLeaderboard } from '$lib/server/leaderboard';
 import { respond, respondError } from '$lib/server/api-utils';
 
 async function getRadiantThreshold(region: string): Promise<number> {
@@ -12,14 +14,14 @@ async function getRadiantThreshold(region: string): Promise<number> {
     return cached;
   }
 
-  const leaderboard = await henrik.getLeaderboard(region);
+  const leaderboard = await getCachedLeaderboard(region);
   const players = leaderboard.players || [];
 
-  if (players.length < 500) {
+  const radiantRR = session.getRadiantThresholdRR(players);
+  if (radiantRR === null) {
     throw new Error('Not enough players in leaderboard');
   }
 
-  const radiantRR = players[499].rr;
   cache.set('leaderboard', cacheKey, radiantRR);
 
   return radiantRR;

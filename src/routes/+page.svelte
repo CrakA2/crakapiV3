@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { parseRadiantRR } from '$lib/parse-radiant-rr';
+
     let name = $state("");
     let tag = $state("");
     let loading = $state(false);
@@ -12,6 +14,7 @@
         wl: true,
         stat: true,
         radiant: false,
+        noBg: false,
     });
 
     const exampleData = {
@@ -229,35 +232,12 @@
         if (widgetToggles.wl) params.set("wl", "y");
         if (widgetToggles.stat) params.set("stat", "y");
         if (widgetToggles.radiant) params.set("radiant", "y");
+        if (widgetToggles.noBg) params.set("bg", "0");
         if (compOnly) params.set("comp", "");
         const queryString = params.toString();
         return `${window.location.origin}/wid/${playerData.region}/${playerData.puuid}${queryString ? `?${queryString}` : ""}`;
     }
 
-    function parseRadiantRR(text: string): {
-        rrNeeded: number | null;
-        isRadiant: boolean;
-        isImmortal: boolean;
-    } {
-        if (text.startsWith('Leaderboard #') && !text.includes('RR to Radiant')) {
-            return { rrNeeded: 0, isRadiant: true, isImmortal: true };
-        }
-        if (text === "Player is Radiant" || text.startsWith('Leaderboard #')) {
-            return { rrNeeded: 0, isRadiant: true, isImmortal: true };
-        }
-        if (text === "Player is not Immortal") {
-            return { rrNeeded: null, isRadiant: false, isImmortal: false };
-        }
-        const match = text.match(/(\d+)RR to Radiant/);
-        if (match) {
-            return {
-                rrNeeded: parseInt(match[1]),
-                isRadiant: false,
-                isImmortal: true,
-            };
-        }
-        return { rrNeeded: null, isRadiant: false, isImmortal: false };
-    }
 </script>
 
 <svelte:head>
@@ -506,11 +486,19 @@
                                     />
                                     <span class="toggle-label">Radiant</span>
                                 </label>
+                                <label class="toggle-switch">
+                                    <input
+                                        type="checkbox"
+                                        bind:checked={widgetToggles.noBg}
+                                    />
+                                    <span class="switch"></span>
+                                    <span class="toggle-label">No Background</span>
+                                </label>
                             </div>
 
                             <div class="widget-preview">
                                 <div class="preview-label">Preview</div>
-                                <div class="preview-box">
+                                <div class="preview-box" class:no-bg={widgetToggles.noBg}>
                                     {#if widgetToggles.mmr}
                                         <div
                                             class="wid-row"
@@ -1322,6 +1310,57 @@
         height: 14px;
     }
 
+    .toggle-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .toggle-switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .switch {
+        position: relative;
+        width: 34px;
+        height: 18px;
+        border-radius: 999px;
+        background: var(--border-hover);
+        transition: background 0.18s ease;
+        flex-shrink: 0;
+    }
+
+    .switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.18s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .toggle-switch input:checked + .switch {
+        background: var(--accent);
+    }
+
+    .toggle-switch input:checked + .switch::after {
+        transform: translateX(16px);
+    }
+
+    .toggle-switch input:focus-visible + .switch {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
     .toggle-label {
         font-family: "JetBrains Mono", monospace;
         font-size: 0.6875rem;
@@ -1353,6 +1392,18 @@
         display: flex;
         flex-direction: column;
         gap: 0.375rem;
+    }
+
+    .preview-box.no-bg {
+        background-color: #2a2a2e;
+        background-image:
+            linear-gradient(45deg, #1f1f22 25%, transparent 25%),
+            linear-gradient(-45deg, #1f1f22 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #1f1f22 75%),
+            linear-gradient(-45deg, transparent 75%, #1f1f22 75%);
+        background-size: 12px 12px;
+        background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+        border-radius: 6px;
     }
 
     .wid-row {

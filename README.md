@@ -130,17 +130,37 @@ https://api.crak.in/wid/{region}/{puuid}?mmr=y&wl=y&stat=y&radiant=y
 | `wl=y` | Show session W/L |
 | `stat=y` | Show KDA + HS% + ACS |
 | `radiant=y` | Show RR to Radiant |
+| `bg=0` | Remove the widget background (fully transparent overlay) |
 | `comp` | Filter to competitive only |
 | `platform=pc` | Platform (default: pc) |
 
-The widget auto-refreshes every 60 seconds and has a transparent background for OBS overlays. A "COMP" badge appears when competitive filter is active.
+The widget auto-refreshes every 60 seconds and has a transparent background for OBS overlays. A "COMP" badge appears when competitive filter is active. Use `bg=0` (e.g. `?mmr=y&wl=y&bg=0`) for a clean overlay with no panel background — perfect for placing stats directly over gameplay.
+
+```
+https://api.crak.in/wid/{region}/{puuid}?mmr=y&wl=y&radiant=y&bg=0
+```
 
 ## Tech Stack
 
 - **Framework** — SvelteKit
 - **Language** — TypeScript
 - **API** — [HenrikDev](https://docs.henrikdev.xyz)
-- **Hosting** — Node.js (PM2)
+- **Hosting** — [api.crak.in](https://api.crak.in) (Node.js + PM2, cluster mode)
+
+## Testing
+
+Unit tests use [Vitest](https://vitest.dev) (jsdom for frontend, node for server logic).
+
+```bash
+npm run test         # run all tests
+npm run test:watch   # watch mode
+```
+
+Covers server logic (`getRadiantThresholdRR`, win/loss/KDA/ACS calculators, formatters, cache coalescing, leaderboard warming) and frontend parsing (`parseRadiantRR`).
+
+## Deployment
+
+Deployed to `api.crak.in` via `deploy.sh` (SSH + rsync, PM2 `cluster` mode). Build with `npm run build`, then run `./deploy.sh`. The leaderboard cache is warmed in the background (10-minute TTL, refreshed every 9 minutes) so Radiant calculations stay fast without hitting the upstream API on every request.
 
 ## License
 
